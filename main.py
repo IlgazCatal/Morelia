@@ -1,9 +1,13 @@
 import wx
+import wx.stc as stc
+import keyword
 import logging as log
 
 log.basicConfig(filename='error.log', level=log.INFO, format='%(asctime)s %(message)s')
 
 FONT_SIZE = 24
+
+#TODO: Implement autohighlight function
 
 
 class Frame1(wx.Frame):
@@ -18,14 +22,19 @@ class Frame1(wx.Frame):
         self.panel = wx.Window(self)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         font1 = wx.Font(FONT_SIZE, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False)
-        self.ctrl1 = wx.TextCtrl(self.panel, value="", pos=(5, 50), size=wx.Size(100, 1080), style=wx.TE_MULTILINE)
-        self.ctrl1.SetFont(font1)
+        # Use StyledTextCtrl for highlighting
+        self.ctrl1 = stc.StyledTextCtrl(self.panel, style=wx.TE_MULTILINE)
+        self.ctrl1.StyleSetFont(stc.STC_STYLE_DEFAULT, font1)
+        self.ctrl1.SetLexer(stc.STC_LEX_PYTHON)
+        self.ctrl1.SetKeyWords(0, " ".join(keyword.kwlist))
+        # Set keyword color (style 5 is for Python keywords)
+
+        self.ctrl1.StyleSetForeground(stc.STC_P_WORD, wx.Colour(0, 0, 255))  # Blue
         self.ctrl1.SetFocus()
-        self.sizer.Add(self.ctrl1, 0, wx.ALL | wx.EXPAND, 0)
+        self.sizer.Add(self.ctrl1, 1, wx.ALL | wx.EXPAND, 0)
         self.panel.SetSizer(self.sizer)
         self.Show()
         self.screen_size = self.ctrl1.GetScreenRect()
-
         global caret
         caret = wx.Caret(self.panel,width=10,height=20)
         self.panel.SetCaret(caret)
