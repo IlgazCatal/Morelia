@@ -7,7 +7,9 @@ log.basicConfig(filename='error.log', level=log.INFO, format='%(asctime)s %(mess
 
 FONT_SIZE = 24
 
-#TODO: Implement autohighlight function
+#TODO: Implement autohighlight function !DONE
+#TODO: Fix bugs !PENDING
+
 
 
 class Frame1(wx.Frame):
@@ -22,14 +24,11 @@ class Frame1(wx.Frame):
         self.panel = wx.Window(self)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         font1 = wx.Font(FONT_SIZE, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False)
-        # Use StyledTextCtrl for highlighting
         self.ctrl1 = stc.StyledTextCtrl(self.panel, style=wx.TE_MULTILINE)
         self.ctrl1.StyleSetFont(stc.STC_STYLE_DEFAULT, font1)
         self.ctrl1.SetLexer(stc.STC_LEX_PYTHON)
         self.ctrl1.SetKeyWords(0, " ".join(keyword.kwlist))
-        # Set keyword color (style 5 is for Python keywords)
-
-        self.ctrl1.StyleSetForeground(stc.STC_P_WORD, wx.Colour(0, 0, 255))  # Blue
+        self.ctrl1.StyleSetForeground(stc.STC_P_WORD, wx.Colour(0, 0, 255))  
         self.ctrl1.SetFocus()
         self.sizer.Add(self.ctrl1, 1, wx.ALL | wx.EXPAND, 0)
         self.panel.SetSizer(self.sizer)
@@ -120,8 +119,8 @@ class Frame1(wx.Frame):
         string.encode("latin-1", 'ignore')
 
     def openFile(self, event):
-        openFileDialog = wx.FileDialog(self, "Open txt files", "", "",
-                                       "txt files (*.txt)|*.txt", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+        openFileDialog = wx.FileDialog(self, "Open Python file", "", "",
+                                       "py files (*.py)|*.py", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
 
         if openFileDialog.ShowModal() == wx.ID_CANCEL:
             return
@@ -133,7 +132,7 @@ class Frame1(wx.Frame):
 
     def OnSaveAs(self, event):
 
-        with wx.FileDialog(self, "Save txt file", wildcard="txt files (*.txt)|*.txt",
+        with wx.FileDialog(self, "Save Python file", wildcard="py files (*.py)|*.py",
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -142,6 +141,7 @@ class Frame1(wx.Frame):
             pathname = fileDialog.GetPath()
             try:
                 with open(pathname, "w+") as file:
+                    global contents
                     contents = self.ctrl1.GetValue()
                     file.write(contents)
                     file.close()
