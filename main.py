@@ -102,6 +102,16 @@ class Frame1(wx.Frame):
         keycode = event.GetKeyCode()
 
         if keycode == wx.WXK_RETURN:
+            # Scintilla accepts a completion on Tab or a fillup character, never
+            # on Return, so Enter has to do it here. Without this the key is
+            # swallowed by the auto-indent below and a newline lands in the
+            # buffer instead of the selected word. A highlighted item is
+            # required; with nothing selected Enter still starts a new line.
+            if self.ctrl1.AutoCompActive() and self.ctrl1.AutoCompGetCurrent() >= 0:
+                self.ctrl1.AutoCompComplete()
+                event.Skip()
+                return
+
             insertion_point = self.ctrl1.GetInsertionPoint()
             text_upto_cursor = self.ctrl1.GetValue()[:insertion_point]
 
