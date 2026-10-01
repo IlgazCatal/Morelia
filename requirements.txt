@@ -1,0 +1,14 @@
+# Morelia runtime dependencies.
+#
+# wxPython is the only third-party dependency; everything else the app uses
+# (builtins, keyword, logging) is in the standard library.
+#
+# Platform markers: the Linux prebuilt wheel is pinned by URL because PyPI
+# has no manylinux wheel for CPython 3.13 on Linux (only macOS/Windows). On
+# Windows, official wheels exist, so a plain version pin is sufficient.
+wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04/wxPython-4.2.2-cp313-cp313-linux_x86_64.whl; sys_platform == "linux"
+wxPython==4.2.2; sys_platform == "win32"
+wxPython==4.2.2; sys_platform == "darwin"
+
+# Installed transitively by the wxPython wheel.
+six==1.17.0
