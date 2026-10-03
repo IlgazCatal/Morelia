@@ -121,13 +121,15 @@ class Frame1(wx.Frame):
             leading_whitespace = current_line[:len(current_line) - len(current_line.lstrip())]
             trimmed_line = current_line.rstrip()
 
+            # AddText, not WriteText: on StyledTextCtrl WriteText is a SetText
+            # alias, so it would throw away the buffer instead of inserting.
             if trimmed_line.endswith(':'):
                 tab = '    '
                 self.ctrl1.SetInsertionPoint(insertion_point)
-                self.ctrl1.WriteText('\n' + leading_whitespace + tab)
+                self.ctrl1.AddText('\n' + leading_whitespace + tab)
             else:
                 self.ctrl1.SetInsertionPoint(insertion_point)
-                self.ctrl1.WriteText('\n' + leading_whitespace)
+                self.ctrl1.AddText('\n' + leading_whitespace)
         else:
             event.Skip()
 
