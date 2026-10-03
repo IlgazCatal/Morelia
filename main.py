@@ -229,6 +229,10 @@ class Frame1(wx.Frame):
             path = openFileDialog.GetPath()
 
         with open(path, "r", encoding="utf-8") as p:
+            # Drop any open completion first. SetText leaves the popup active
+            # with a stale selection, and the next Return would then complete
+            # that selection over the freshly loaded text.
+            self.ctrl1.AutoCompCancel()
             self.ctrl1.SetText(p.read())
 
         self.pathname = path
