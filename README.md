@@ -6,7 +6,14 @@ is one file, [`main.py`](main.py) — 342 lines, no build step, no test suite.
 ## What it does
 
 **Syntax colouring.** Python highlighting via Scintilla's Python lexer. Plain text is
-white, keywords are red, on a black editor with dark grey window chrome.
+white, keywords are red, and the built-in error names — `ValueError`, `TypeError`,
+`KeyError`, `FileNotFoundError`, the rest of the exception hierarchy, 70 of them — are
+yellow. The editor is black with dark grey window chrome.
+
+**Error names come from the second word list.** They are derived from the running
+interpreter (`ERROR_KEYWORDS` in `main.py`), so they track whatever Python you run
+under, and they are handed to the lexer as word list 1 so they get their own style
+instead of being coloured as ordinary identifiers.
 
 **Autocomplete.** A popup offers Python keywords plus the builtins
 (`keyword.kwlist | dir(builtins)`, 191 entries). It opens once you have typed at

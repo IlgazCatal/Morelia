@@ -12,12 +12,13 @@ FONT_SIZE = 24
 MIN_COMPLETE_LENGTH = 2
 
 # Dark theme. CHROME paints the window corners around the editor, BACKGROUND
-# the editor itself, TEXT the default foreground and KEYWORD the Python
-# keywords (STC_P_WORD).
+# the editor itself, TEXT the default foreground, KEYWORD the Python keywords
+# (STC_P_WORD) and ERROR the error names (STC_P_WORD2).
 CHROME = wx.Colour(64, 64, 64)
 BACKGROUND = wx.Colour(0, 0, 0)
 TEXT = wx.Colour(255, 255, 255)
 KEYWORD = wx.Colour(255, 0, 0)
+ERROR = wx.Colour(255, 255, 0)
 
 # Every style the Python lexer paints with. STC_STYLE_DEFAULT is not one of
 # them: it does not feed the lexer styles, so they all need explicit colours.
@@ -38,6 +39,17 @@ DARK_STYLES = (
     stc.STC_P_DEFNAME,
     stc.STC_P_DECORATOR,
     stc.STC_P_OPERATOR,
+)
+
+# The error names, i.e. the built-in exception hierarchy. They go into the
+# lexer's second word list so they get their own style; otherwise the lexer
+# treats them as ordinary identifiers. Leading underscores are left out:
+# _IncompleteInputError is a parser internal, not something anyone types.
+ERROR_KEYWORDS = sorted(
+    name for name in dir(builtins)
+    if isinstance(getattr(builtins, name), type)
+    and issubclass(getattr(builtins, name), BaseException)
+    and not name.startswith('_')
 )
 
 # Don't offer completions while the caret sits inside literals or comments.
@@ -74,6 +86,8 @@ class Frame1(wx.Frame):
         self.ctrl1.StyleSetFont(stc.STC_STYLE_DEFAULT, font1)
         self.ctrl1.SetLexer(stc.STC_LEX_PYTHON)
         self.ctrl1.SetKeyWords(0, " ".join(keyword.kwlist))
+        # Word list 1 is the lexer's second list and styles as STC_P_WORD2.
+        self.ctrl1.SetKeyWords(1, " ".join(ERROR_KEYWORDS))
         # STC_STYLE_DEFAULT does not feed the styles the lexer paints with:
         # plain text is style 0 and every token style keeps its own attributes,
         # so each one is given the black background and the white text.
@@ -83,6 +97,7 @@ class Frame1(wx.Frame):
         self.ctrl1.StyleSetBackground(stc.STC_STYLE_DEFAULT, BACKGROUND)
         self.ctrl1.StyleSetForeground(stc.STC_STYLE_DEFAULT, TEXT)
         self.ctrl1.StyleSetForeground(stc.STC_P_WORD, KEYWORD)
+        self.ctrl1.StyleSetForeground(stc.STC_P_WORD2, ERROR)
         # The lexer creates a 16px text margin that nothing ever puts text in
         # (MarginGetText is empty for every line) and GTK paints it with the
         # widget background, which stayed white. Drop the margins.
