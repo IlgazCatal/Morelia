@@ -11,6 +11,35 @@ log.basicConfig(filename='error.log', level=log.INFO, format='%(asctime)s %(mess
 FONT_SIZE = 24
 MIN_COMPLETE_LENGTH = 2
 
+# Dark theme. CHROME paints the window corners around the editor, BACKGROUND
+# the editor itself, TEXT the default foreground and KEYWORD the Python
+# keywords (STC_P_WORD).
+CHROME = wx.Colour(64, 64, 64)
+BACKGROUND = wx.Colour(0, 0, 0)
+TEXT = wx.Colour(255, 255, 255)
+KEYWORD = wx.Colour(255, 0, 0)
+
+# Every style the Python lexer paints with. STC_STYLE_DEFAULT is not one of
+# them: it does not feed the lexer styles, so they all need explicit colours.
+DARK_STYLES = (
+    stc.STC_P_DEFAULT,
+    stc.STC_P_WORD,
+    stc.STC_P_COMMENTLINE,
+    stc.STC_P_COMMENTBLOCK,
+    stc.STC_P_NUMBER,
+    stc.STC_P_STRING,
+    stc.STC_P_STRINGEOL,
+    stc.STC_P_CHARACTER,
+    stc.STC_P_TRIPLE,
+    stc.STC_P_TRIPLEDOUBLE,
+    stc.STC_P_IDENTIFIER,
+    stc.STC_P_WORD2,
+    stc.STC_P_CLASSNAME,
+    stc.STC_P_DEFNAME,
+    stc.STC_P_DECORATOR,
+    stc.STC_P_OPERATOR,
+)
+
 # Don't offer completions while the caret sits inside literals or comments.
 IGNORED_STYLES = {
     stc.STC_P_STRING,
@@ -37,13 +66,28 @@ class Frame1(wx.Frame):
 
     def InitUI(self):
         self.panel = wx.Window(self)
+        self.SetBackgroundColour(CHROME)
+        self.panel.SetBackgroundColour(CHROME)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         font1 = wx.Font(FONT_SIZE, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False)
         self.ctrl1 = stc.StyledTextCtrl(self.panel, style=wx.TE_MULTILINE)
         self.ctrl1.StyleSetFont(stc.STC_STYLE_DEFAULT, font1)
         self.ctrl1.SetLexer(stc.STC_LEX_PYTHON)
         self.ctrl1.SetKeyWords(0, " ".join(keyword.kwlist))
-        self.ctrl1.StyleSetForeground(stc.STC_P_WORD, wx.Colour(0, 0, 255))  
+        # STC_STYLE_DEFAULT does not feed the styles the lexer paints with:
+        # plain text is style 0 and every token style keeps its own attributes,
+        # so each one is given the black background and the white text.
+        for style in DARK_STYLES:
+            self.ctrl1.StyleSetBackground(style, BACKGROUND)
+            self.ctrl1.StyleSetForeground(style, TEXT)
+        self.ctrl1.StyleSetBackground(stc.STC_STYLE_DEFAULT, BACKGROUND)
+        self.ctrl1.StyleSetForeground(stc.STC_STYLE_DEFAULT, TEXT)
+        self.ctrl1.StyleSetForeground(stc.STC_P_WORD, KEYWORD)
+        # The lexer creates a 16px text margin that nothing ever puts text in
+        # (MarginGetText is empty for every line) and GTK paints it with the
+        # widget background, which stayed white. Drop the margins.
+        for margin in range(self.ctrl1.GetMarginCount()):
+            self.ctrl1.SetMarginWidth(margin, 0)
         self.ctrl1.AutoCompSetIgnoreCase(True)
         self.ctrl1.AutoCompSetAutoHide(True)
         self.ctrl1.AutoCompSetMaxHeight(12)
@@ -56,6 +100,8 @@ class Frame1(wx.Frame):
         self.screen_size = self.ctrl1.GetScreenRect()
 
         menubar = wx.MenuBar()
+        menubar.SetBackgroundColour(CHROME)
+        menubar.SetForegroundColour(TEXT)
         fileMenu = wx.Menu()
         fileItem = fileMenu.Append(wx.ID_EXIT, 'Quit', 'Quit application')
         menubar.Append(fileMenu, '&File')
