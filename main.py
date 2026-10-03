@@ -130,6 +130,27 @@ class Frame1(wx.Frame):
             else:
                 self.ctrl1.SetInsertionPoint(insertion_point)
                 self.ctrl1.AddText('\n' + leading_whitespace)
+        elif keycode == wx.WXK_BACK:
+            # Scintilla's backspace unindents: with the caret inside the
+            # leading whitespace it drops the whole indentation, so one
+            # Backspace undoes several Tab presses. DeleteBackNotLine()
+            # obeys the same rule, so delete the range ourselves.
+            # Any completion goes first: the key is consumed, so Scintilla
+            # never refreshes the popup and its selection would go stale
+            # against the shortened word.
+            self.ctrl1.AutoCompCancel()
+            first, last = self.ctrl1.GetSelection()
+            if first != last:
+                start, end = first, last
+            else:
+                end = self.ctrl1.GetCurrentPos()
+                start = end - 1
+            if start < 0:
+                return
+            self.ctrl1.SetTargetStart(start)
+            self.ctrl1.SetTargetEnd(end)
+            self.ctrl1.ReplaceTarget('')
+            self.ctrl1.TargetWholeDocument()
         else:
             event.Skip()
 
