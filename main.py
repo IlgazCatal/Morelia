@@ -172,6 +172,25 @@ class Frame1(wx.Frame):
             return
 
         char = chr(keycode)
+
+        # Auto-pairing for common brackets and quotes
+        pos = self.ctrl1.GetCurrentPos()
+        # Don't pair if inside comments/strings (follow same style check as autocomplete)
+        in_ignored = pos > 0 and self.ctrl1.GetStyleAt(pos - 1) in IGNORED_STYLES
+        pairs = {
+            '(': ')',
+            '[': ']',
+            '{': '}',
+            '"': '"',
+            "'": "'",
+            '`': '`',
+        }
+        if char in pairs and not in_ignored:
+            close = pairs[char]
+            self.ctrl1.AddText(char + close)
+            self.ctrl1.SetCurrentPos(pos + 1)
+            return
+
         if not (char.isalnum() or char == '_'):
             event.Skip()
             return
@@ -180,8 +199,7 @@ class Frame1(wx.Frame):
             event.Skip()
             return
 
-        pos = self.ctrl1.GetCurrentPos()
-        if pos > 0 and self.ctrl1.GetStyleAt(pos - 1) in IGNORED_STYLES:
+        if in_ignored:
             event.Skip()
             return
 
