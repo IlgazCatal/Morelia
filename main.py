@@ -179,7 +179,6 @@ class Frame1(wx.Frame):
             if self.ctrl1.AutoCompActive() and self.ctrl1.AutoCompGetCurrent() >= 0:
                 self.ctrl1.AutoCompComplete()
                 self.ctrl1.AddText(' ')
-                event.Skip()
                 return
 
             insertion_point = self.ctrl1.GetInsertionPoint()
