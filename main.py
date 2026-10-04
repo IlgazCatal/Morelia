@@ -100,6 +100,7 @@ class Frame1(wx.Frame):
             self.ctrl1.StyleSetForeground(style, TEXT)
         self.ctrl1.StyleSetBackground(stc.STC_STYLE_DEFAULT, BACKGROUND)
         self.ctrl1.StyleSetForeground(stc.STC_STYLE_DEFAULT, TEXT)
+        self.ctrl1.SetCaretForeground(wx.Colour(255, 255, 255))
         self.ctrl1.StyleSetForeground(stc.STC_P_WORD, KEYWORD)
         self.ctrl1.StyleSetForeground(stc.STC_P_WORD2, ERROR)
         # The lexer creates a 16px text margin that nothing ever puts text in
