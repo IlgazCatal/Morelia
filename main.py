@@ -2,6 +2,10 @@ import builtins
 import keyword
 import logging as log
 import os
+import shlex
+import subprocess
+import sys
+import tempfile
 
 import wx
 import wx.stc as stc
@@ -125,6 +129,7 @@ class Frame1(wx.Frame):
         saveAsItem = actionsMenu.Append(wx.ID_SAVEAS, "Save As", "Save file under a new name...")
         openItem = actionsMenu.Append(wx.ID_OPEN, "Open", "Open File...")
         completeItem = actionsMenu.Append(wx.ID_ANY, "Autocomplete", "Show autocomplete list")
+        runItem = actionsMenu.Append(wx.ID_EXECUTE, "Run with Parameters...", "Run current code with custom arguments")
         viewMenu = wx.Menu()
         zoomInItem = viewMenu.Append(wx.ID_ZOOM_IN, "Zoom (+)", "Zoom in")
         zoomOutItem = viewMenu.Append(wx.ID_ZOOM_OUT, "Zoom (-)", "Zoom out")
@@ -139,6 +144,7 @@ class Frame1(wx.Frame):
         self.Bind(wx.EVT_MENU, self.onZoomIn, zoomInItem, id=wx.ID_ZOOM_IN)
         self.Bind(wx.EVT_MENU, self.onZoomOut, zoomOutItem, id=wx.ID_ZOOM_OUT)
         self.Bind(wx.EVT_MENU, self.onAutocomplete, completeItem)
+        self.Bind(wx.EVT_MENU, self.onRun, runItem, id=wx.ID_EXECUTE)
         # EVT_CHAR must be bound to the editor itself. A binding on the Frame
         # never sees keystrokes that ctrl1 consumes.
         self.ctrl1.Bind(wx.EVT_CHAR, self.autoComplete)
@@ -149,6 +155,7 @@ class Frame1(wx.Frame):
             (wx.ACCEL_CTRL, ord('S'), wx.ID_SAVE),  # ctrl+s to save
             (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('S'), wx.ID_SAVEAS),  # ctrl+shift+s for save as
             (wx.ACCEL_CTRL, ord('O'), wx.ID_OPEN),  # ctrl+o to open
+            (wx.ACCEL_CTRL, ord('R'), wx.ID_EXECUTE),  # ctrl+r to run
             (wx.ACCEL_CTRL, ord('1'), wx.ID_ZOOM_IN),  # ctrl+1 to zoom in
             (wx.ACCEL_CTRL, ord('2'), wx.ID_ZOOM_OUT)  # ctrl+2 to zoom out
         ])
@@ -349,6 +356,108 @@ class Frame1(wx.Frame):
                 return
 
             self.writeFile(fileDialog.GetPath())
+
+    def _writeTempIfNeeded(self):
+        """Write current buffer to a temp file if not saved, else save to pathname."""
+        if self.pathname:
+            self.writeFile(self.pathname)
+            return self.pathname
+        fd, temp_path = tempfile.mkstemp(suffix='.py', prefix='morelia_')
+        os.close(fd)
+        contents = self.ctrl1.GetValue()
+        with open(temp_path, 'w', encoding='utf-8') as f:
+            f.write(contents)
+        return temp_path
+
+    def runCurrentCode(self, args_str=''):
+        """Run the current Python file with user-provided arguments."""
+        script_path = self._writeTempIfNeeded()
+        args = []
+        if args_str.strip():
+            try:
+                args = shlex.split(args_str, posix=(os.name != 'nt'))
+            except Exception:
+                args = args_str.split()
+        cmd = [sys.executable, script_path] + args
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                cwd=os.path.dirname(script_path) or os.getcwd(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            out, err = proc.communicate(timeout=120)
+            return proc.returncode, out, err, script_path
+        except subprocess.TimeoutExpired as e:
+            if e.stdout:
+                out = e.stdout.decode('utf-8', errors='replace') if hasattr(e.stdout, 'decode') else str(e.stdout)
+            else:
+                out = ''
+            if e.stderr:
+                err = e.stderr.decode('utf-8', errors='replace') if hasattr(e.stderr, 'decode') else str(e.stderr)
+            else:
+                err = ''
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            return -1, out, err + '\n[Timeout after 120s]', script_path
+        except Exception as e:
+            return -2, '', str(e), script_path
+
+    def onRun(self, event):
+        dlg = RunArgsDialog(self, "Run with Parameters")
+        if dlg.ShowModal() == wx.ID_OK:
+            args = dlg.getArgs()
+            dlg.Destroy()
+            code, out, err, sp = self.runCurrentCode(args)
+            outwin = RunOutputFrame(self, "Run Output", code, out, err, sp)
+            outwin.Show()
+            return
+        dlg.Destroy()
+
+
+class RunArgsDialog(wx.Dialog):
+    def __init__(self, parent, title):
+        super().__init__(parent, title=title, size=(600, 120))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        arg_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        arg_sizer.Add(wx.StaticText(self, label="Arguments:"), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.args_ctrl = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER)
+        self.args_ctrl.SetHint("e.g. input.txt --flag value")
+        arg_sizer.Add(self.args_ctrl, 1, wx.EXPAND)
+        sizer.Add(arg_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        btns = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
+        sizer.Add(btns, 0, wx.ALL | wx.EXPAND, 10)
+        self.SetSizer(sizer)
+        self.args_ctrl.SetFocus()
+
+    def getArgs(self):
+        return self.args_ctrl.GetValue()
+
+
+class RunOutputFrame(wx.Frame):
+    def __init__(self, parent, title, returncode, stdout, stderr, script_path):
+        super().__init__(parent, title=title, size=(900, 600))
+        self.Centre()
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        info = wx.StaticText(panel, label=f"Return code: {returncode} | Script: {script_path}")
+        sizer.Add(info, 0, wx.ALL, 5)
+        self.output = wx.stc.StyledTextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        self.output.StyleSetFont(stc.STC_STYLE_DEFAULT, wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.output.SetText(f"=== STDOUT ===\n{stdout}\n\n=== STDERR ===\n{stderr}")
+        self.output.StyleClearAll()
+        self.output.StyleSetBackground(stc.STC_STYLE_DEFAULT, wx.Colour(0, 0, 0))
+        self.output.StyleSetForeground(stc.STC_STYLE_DEFAULT, wx.Colour(255, 255, 255))
+        self.output.SetReadOnly(True)
+        sizer.Add(self.output, 1, wx.ALL | wx.EXPAND, 5)
+        btn = wx.Button(panel, wx.ID_CLOSE, "Close")
+        self.Bind(wx.EVT_BUTTON, lambda e: self.Close(), btn)
+        sizer.Add(btn, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        panel.SetSizer(sizer)
+        self.Show()
 
 
 if __name__ == '__main__':
