@@ -178,6 +178,7 @@ class Frame1(wx.Frame):
             # required; with nothing selected Enter still starts a new line.
             if self.ctrl1.AutoCompActive() and self.ctrl1.AutoCompGetCurrent() >= 0:
                 self.ctrl1.AutoCompComplete()
+                self.ctrl1.AddText(' ')
                 event.Skip()
                 return
 
