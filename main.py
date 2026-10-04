@@ -264,6 +264,11 @@ class Frame1(wx.Frame):
             event.Skip()
             return
 
+        # Also skip control characters
+        if keycode < 32:
+            event.Skip()
+            return
+
         try:
             char = chr(keycode)
         except Exception:
@@ -286,9 +291,10 @@ class Frame1(wx.Frame):
             close = pairs[char]
             self.ctrl1.AddText(char + close)
             self.ctrl1.SetCurrentPos(pos + 1)
+            event.Skip()
             return
 
-        if not (char.isalnum() or char == '_'):
+        if not (char.isalnum() or char == '_' or char in '()[]{}"\'`'):
             event.Skip()
             return
 
