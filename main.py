@@ -254,16 +254,21 @@ class Frame1(wx.Frame):
 
     def autoComplete(self, event):
         keycode = event.GetUnicodeKey()
+        raw = event.GetKeyCode()
 
         # WXK_NONE and every special key (WXK_LEFT, WXK_HOME, ...) sit at or
         # above WXK_START. Some of those values are valid codepoints (WXK_LEFT
         # is 314, and chr(314) is an alnum letter), so the range must be
         # checked before chr().
-        if keycode == wx.WXK_NONE or keycode >= wx.WXK_START:
+        if keycode == wx.WXK_NONE or keycode >= wx.WXK_START or raw >= wx.WXK_START:
             event.Skip()
             return
 
-        char = chr(keycode)
+        try:
+            char = chr(keycode)
+        except Exception:
+            event.Skip()
+            return
 
         # Auto-pairing for common brackets and quotes
         pos = self.ctrl1.GetCurrentPos()
