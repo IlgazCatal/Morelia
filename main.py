@@ -291,7 +291,6 @@ class Frame1(wx.Frame):
             close = pairs[char]
             self.ctrl1.AddText(char + close)
             self.ctrl1.SetCurrentPos(pos + 1)
-            event.Skip()
             return
 
         if not (char.isalnum() or char == '_' or char in '()[]{}"\'`'):
