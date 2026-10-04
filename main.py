@@ -432,7 +432,8 @@ class Frame1(wx.Frame):
 
 class RunArgsDialog(wx.Dialog):
     def __init__(self, parent, title):
-        super().__init__(parent, title=title, size=(600, 140), minSize=(500, 120))
+        super().__init__(parent, title=title, size=(600, 140))
+        self.SetMinSize((500, 120))
         sizer = wx.BoxSizer(wx.VERTICAL)
         arg_sizer = wx.BoxSizer(wx.HORIZONTAL)
         arg_sizer.Add(wx.StaticText(self, label="Arguments:"), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
