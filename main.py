@@ -278,9 +278,9 @@ class Frame1(wx.Frame):
 
     def _getTreeItemPath(self, item):
         path_parts = []
-        while item and item != self.tree_root:
+        while item and item.IsOk() and item != self.tree_root:
             path_parts.append(self.tree.GetItemText(item))
-            item = self.tree.GetItemParent()
+            item = self.tree.GetItemParent(item)
         path_parts.reverse()
         if path_parts:
             return os.path.join(os.getcwd(), *path_parts)
